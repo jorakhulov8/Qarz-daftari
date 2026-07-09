@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Qarz Daftarcha</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="theme-color" content="#2F6FED" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Qarz Daftarcha" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: #FFFFFF;
+    color: #0F172A;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 40px; }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulseSoft { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  .card { animation: slideIn .35s ease both; transition: transform .18s ease, box-shadow .18s ease;
+    background:#fff; border:1px solid #F1F5F9; border-radius:16px; padding:13px 14px; margin-bottom:10px;
+    box-shadow:0 1px 3px rgba(15,23,42,.04); }
+  .card:active { transform: scale(.99); }
+  .card.paid { opacity: .7; }
+  .btn { transition: background .15s ease, transform .12s ease, box-shadow .15s ease; cursor:pointer; border:none; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0) scale(.97); }
+  .modal-wrap { animation: popIn .25s cubic-bezier(.2,.9,.3,1.2) both; }
+  .pulse { animation: pulseSoft 1.8s ease-in-out infinite; }
+  .chevron { transition: transform .2s ease; }
+  input, select { transition: border-color .15s ease, box-shadow .15s ease; font-family: inherit; }
+  input:focus { outline:none; border-color:#2F6FED; box-shadow:0 0 0 3px rgba(47,111,237,.15); }
+  .hole { width:7px; height:7px; border-radius:50%; background:#E2E8F0; }
+
+  .header { display:flex; align-items:center; gap:10px; padding:18px 14px 12px; border-bottom:1px solid #F1F5F9; }
+  .spiral { display:flex; flex-direction:column; gap:3px; }
+  .add-btn { background:#2F6FED; color:#fff; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(47,111,237,.3); font-size:20px; }
+  .alert-box { margin:10px 14px 0; background:#FEF2F2; border:1px solid #FECACA; border-radius:14px; padding:10px 12px; }
+  .search-wrap { display:flex; align-items:center; gap:8px; margin:14px 14px 10px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:9px 12px; }
+  .search-wrap input { border:none; outline:none; background:transparent; font-size:13.5px; flex:1; color:#0F172A; }
+  .list { padding: 4px 14px 90px; }
+  .item-row { display:flex; justify-content:space-between; font-size:13px; padding:3px 0; }
+  .pay-btn { flex:1; background:#2F6FED; color:#fff; border-radius:10px; padding:9px 0; font-size:13px; font-weight:700; }
+  .delete-btn { background:#FEF2F2; color:#DC2626; border-radius:10px; padding:9px 12px; font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:4px; }
+  .small-blue { background:#2F6FED; color:#fff; border-radius:10px; width:38px; }
+  .small-gray { background:#F1F5F9; color:#64748B; border-radius:10px; width:38px; }
+  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.4); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
+  .modal { background:#fff; width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:18px 18px 16px; max-height:88vh; display:flex; flex-direction:column; }
+  .form-scroll { overflow-y:auto; padding-bottom:6px; }
+  .label { font-size:12px; font-weight:700; color:#64748B; margin:10px 0 5px; display:block; }
+  .form-input { width:100%; border:1px solid #E2E8F0; border-radius:10px; padding:9px 11px; font-size:13.5px; margin-bottom:4px; box-sizing:border-box; color:#0F172A; }
+  .add-row-btn { background:#EFF6FF; color:#1E4FBF; border-radius:10px; padding:7px 12px; font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:4px; margin-top:2px; }
+  .total-box { display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; border-radius:12px; padding:10px 14px; margin-top:14px; }
+  .submit-btn { background:#2F6FED; color:#fff; border-radius:12px; padding:13px 0; font-size:14.5px; font-weight:700; margin-top:14px; box-shadow:0 6px 16px rgba(47,111,237,.3); width:100%; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#0F172A; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; animation:toastIn .25s ease both; z-index:60; }
+  .badge { font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; display:inline-flex; align-items:center; gap:3px; }
+  .install-banner { margin:10px 14px 0; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:14px; padding:10px 12px; font-size:12.5px; color:#1E4FBF; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .install-banner button { background:#2F6FED; color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+  .empty { text-align:center; color:#94A3B8; margin-top:40px; font-size:14px; }
+  h1,p { margin:0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const BLUE = "#2F6FED", BLUE_DARK = "#1E4FBF";
+const STORE_KEY = "qarzDaftarchaCustomers";
+
+let state = {
+  customers: JSON.parse(localStorage.getItem(STORE_KEY) || "[]"),
+  showForm: false,
+  search: "",
+  payingId: null,
+  payAmount: "",
+  expandedId: null,
+  toast: null,
+  formItems: [{ id: uid(), name: "", price: "", qty: "1" }],
+  deferredPrompt: null,
+  showInstallBanner: false,
+};
+
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function fmtMoney(n) { return new Intl.NumberFormat("uz-UZ").format(Math.round(n || 0)); }
+function fmtDate(d) {
+  if (!d) return "—";
+  const dt = new Date(d + "T00:00:00");
+  const months = ["Yan","Fev","Mar","Apr","May","Iyun","Iyul","Avg","Sen","Okt","Noy","Dek"];
+  return dt.getDate() + " " + months[dt.getMonth()] + ", " + dt.getFullYear();
+}
+function daysDiff(dueDate) {
+  const a = new Date(todayStr() + "T00:00:00");
+  const b = new Date(dueDate + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state.customers)); }
+function showToast(msg) {
+  state.toast = msg;
+  render();
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { state.toast = null; render(); }, 2200);
+}
+
+function enrich(c) {
+  const total = c.items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
+  const paid = (c.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+  const remaining = Math.max(total - paid, 0);
+  const isPaid = remaining <= 0;
+  const dd = c.dueDate ? daysDiff(c.dueDate) : null;
+  let status = "upcoming";
+  if (isPaid) status = "paid";
+  else if (dd !== null && dd < 0) status = "overdue";
+  else if (dd !== null && dd === 0) status = "today";
+  return Object.assign({}, c, { total, paid, remaining, isPaid, dd, status });
+}
+
+function getFiltered() {
+  const enriched = state.customers.map(enrich);
+  const q = state.search.trim().toLowerCase();
+  let list = enriched;
+  if (q) list = list.filter(c => c.name.toLowerCase().includes(q) || (c.phone||"").includes(q));
+  const order = { overdue: 0, today: 1, upcoming: 2, paid: 3 };
+  return list.sort((a, b) => {
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    return 0;
+  });
+}
+
+function getAlerts() {
+  return state.customers.map(enrich).filter(c => !c.isPaid && (c.status === "overdue" || c.status === "today"));
+}
+
+function badgeHtml(status, dd) {
+  const map = {
+    paid: { bg:"#DCFCE7", color:"#15803D", text:"To'langan" },
+    overdue: { bg:"#FEE2E2", color:"#DC2626", text: Math.abs(dd) + " kun kechikdi" },
+    today: { bg:"#FEF3C7", color:"#B45309", text:"Bugun" },
+    upcoming: { bg:"#DBEAFE", color: BLUE_DARK, text: dd != null ? dd + " kun qoldi" : "Muddat yo'q" },
+  };
+  const s = map[status] || map.upcoming;
+  return '<span class="badge" style="background:'+s.bg+';color:'+s.color+'">'+s.text+'</span>';
+}
+
+function icon(name, size, color) {
+  size = size || 16; color = color || "currentColor";
+  const icons = {
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    package: '<path d="M16.5 9.4 7.55 4.24"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"/><path d="M3.29 7 12 12l8.71-5"/><line x1="12" y1="22" x2="12" y2="12"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    chevron: '<polyline points="6 9 12 15 18 9"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  };
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(icons[name]||'')+'</svg>';
+}
+
+function render() {
+  const enrichedList = getFiltered();
+  const alerts = getAlerts();
+  const totalCustomers = state.customers.length;
+  const totalDebtors = state.customers.map(enrich).filter(c => !c.isPaid).length;
+
+  let html = '';
+  html += '<div class="header">';
+  html += '<div class="spiral">' + Array(5).fill('<div class="hole"></div>').join('') + '</div>';
+  html += '<div style="flex:1"><div style="font-size:20px;font-weight:800;color:#0F172A">Qarz Daftarcha</div>';
+  html += '<div style="font-size:12.5px;color:#64748B;margin-top:2px">' + totalCustomers + ' mijoz · ' + totalDebtors + ' qarzdor</div></div>';
+  html += '<button class="btn add-btn" onclick="openForm()">' + icon('plus', 18, '#fff') + '</button>';
+  html += '</div>';
+
+  if (state.showInstallBanner) {
+    html += '<div class="install-banner"><span>Bu ilovani telefon ekraniga o\\'rnatib qo\\'yishingiz mumkin</span><button onclick="installApp()">O\\'rnatish</button></div>';
+  }
+
+  if (alerts.length > 0) {
+    html += '<div class="alert-box pulse">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + icon('bell',16,'#DC2626') + '<span style="font-weight:700;color:#B91C1C;font-size:13.5px">To\\'lov muddati keldi (' + alerts.length + ')</span></div>';
+    alerts.slice(0,3).forEach(a => {
+      html += '<div style="font-size:12.5px;color:#7F1D1D;padding:2px 0">' + a.name + ' — ' + fmtMoney(a.remaining) + " so'm " + (a.status==='today' ? '(bugun)' : '('+Math.abs(a.dd)+" kun o'tgan)") + '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="search-wrap">' + icon('search',16,'#94A3B8') + '<input placeholder="Ism yoki telefon orqali qidirish..." value="' + escapeHtml(state.search) + '" oninput="onSearch(this.value)"/></div>';
+
+  html += '<div class="list">';
+  if (enrichedList.length === 0) {
+    html += '<div class="empty">Hozircha qarzdorlar yo\\'q.<br/>Yangi qarz qo\\'shish uchun + tugmasini bosing.</div>';
+  }
+  enrichedList.forEach(c => {
+    html += '<div class="card ' + (c.isPaid?'paid':'') + '">';
+    html += '<div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleExpand(\\''+c.id+'\\')">';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px;color:#0F172A">'+escapeHtml(c.name)+'</span>'+badgeHtml(c.status,c.dd)+'</div>';
+    html += '<div style="font-size:12.5px;color:#64748B;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">';
+    if (c.phone) html += '<span style="display:flex;align-items:center;gap:3px">'+icon('phone',11)+' '+escapeHtml(c.phone)+'</span>';
+    if (c.dueDate) html += '<span style="display:flex;align-items:center;gap:3px">'+icon('calendar',11)+' '+fmtDate(c.dueDate)+'</span>';
+    html += '</div></div>';
+    html += '<div style="text-align:right"><div style="font-weight:800;font-size:15px;color:'+(c.isPaid?'#16A34A':'#0F172A')+'">'+(c.isPaid?"To'langan":fmtMoney(c.remaining)+" so'm")+'</div>';
+    if (!c.isPaid && c.paid > 0) html += '<div style="font-size:11px;color:#94A3B8">'+fmtMoney(c.paid)+" to'landi</div>";
+    html += '</div>';
+    html += '<div class="chevron" style="transform:'+(state.expandedId===c.id?'rotate(180deg)':'rotate(0deg)')+'">'+icon('chevron',16,'#94A3B8')+'</div>';
+    html += '</div>';
+
+    if (state.expandedId === c.id) {
+      html += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #E2E8F0">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'+icon('package',13,'#64748B')+'<span style="font-size:12.5px;font-weight:700;color:#475569">Sotib olingan narsalar</span></div>';
+      c.items.forEach(it => {
+        html += '<div class="item-row"><span style="color:#334155">'+escapeHtml(it.name)+' <span style="color:#94A3B8">× '+it.qty+'</span></span><span style="color:#334155;font-weight:600">'+fmtMoney(it.price*it.qty)+" so'm</span></div>";
+      });
+      html += '<div class="item-row" style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:6px"><span style="font-weight:700;color:#0F172A">Jami</span><span style="font-weight:700;color:#0F172A">'+fmtMoney(c.total)+" so'm</span></div>";
+
+      if (!c.isPaid) {
+        html += '<div style="margin-top:12px">';
+        if (state.payingId === c.id) {
+          html += '<div style="display:flex;gap:8px">';
+          html += '<input class="form-input" style="margin-bottom:0" type="number" placeholder="Summa" value="'+escapeHtml(state.payAmount)+'" oninput="onPayAmount(this.value)"/>';
+          html += '<button class="btn small-blue" onclick="submitPayment(\\''+c.id+'\\')">'+icon('check',15,'#fff')+'</button>';
+          html += '<button class="btn small-gray" onclick="cancelPayment()">'+icon('x',15,'#64748B')+'</button>';
+          html += '</div>';
+        } else {
+          html += '<div style="display:flex;gap:8px">';
+          html += '<button class="btn pay-btn" onclick="startPayment(\\''+c.id+'\\')">To\\'lov qabul qilish</button>';
+          html += '<button class="btn delete-btn" onclick="removeCustomer(\\''+c.id+'\\')">'+icon('trash',15,'#DC2626')+'</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+      } else {
+        html += '<button class="btn delete-btn" style="margin-top:12px" onclick="removeCustomer(\\''+c.id+'\\')">'+icon('trash',14,'#DC2626')+" O'chirish</button>";
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if (state.showForm) {
+    const formTotal = state.formItems.reduce((s,it)=> s + (Number(it.price)||0)*(Number(it.qty)||0), 0);
+    html += '<div class="overlay" onclick="closeFormOverlay(event)">';
+    html += '<div class="modal modal-wrap" onclick="event.stopPropagation()">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+    html += '<span style="font-weight:800;font-size:17px;color:#0F172A">Yangi qarz</span>';
+    html += '<button style="background:none;border:none;cursor:pointer" onclick="closeForm()">'+icon('x',20,'#64748B')+'</button>';
+    html += '</div>';
+    html += '<div class="form-scroll">';
+    html += '<label class="label">Mijoz ismi</label><input class="form-input" id="f_name" placeholder="Masalan: Aziz Karimov" value="'+escapeHtml(state.fName||'')+'" oninput="state.fName=this.value"/>';
+    html += '<label class="label">Telefon raqami</label><input class="form-input" id="f_phone" placeholder="+998 90 123 45 67" value="'+escapeHtml(state.fPhone||'')+'" oninput="state.fPhone=this.value"/>';
+    html += '<label class="label">Qaytarish muddati</label><input class="form-input" id="f_due" type="date" value="'+(state.fDue||'')+'" oninput="state.fDue=this.value"/>';
+    html += '<label class="label">Sotib olingan narsalar</label>';
+    state.formItems.forEach((it, idx) => {
+      html += '<div style="display:flex;gap:6px;margin-bottom:6px">';
+      html += '<input class="form-input" style="flex:2;margin-bottom:0" placeholder="Nomi" value="'+escapeHtml(it.name)+'" oninput="updateItemRow(\\''+it.id+'\\',\\'name\\',this.value)"/>';
+      html += '<input class="form-input" style="flex:1.3;margin-bottom:0" type="number" placeholder="Narxi" value="'+escapeHtml(it.price)+'" oninput="updateItemRow(\\''+it.id+'\\',\\'price\\',this.value)"/>';
+      html += '<input class="form-input" style="flex:0.8;margin-bottom:0" type="number" placeholder="Soni" value="'+escapeHtml(it.qty)+'" oninput="updateItemRow(\\''+it.id+'\\',\\'qty\\',this.value)"/>';
+      html += '<button style="background:none;border:none;cursor:pointer;padding:0 2px" onclick="removeItemRow(\\''+it.id+'\\')">'+icon('x',16,'#CBD5E1')+'</button>';
+      html += '</div>';
+    });
+    html += '<button class="btn add-row-btn" onclick="addItemRow()">'+icon('plus',13,'#1E4FBF')+" Yana narsa qo'shish</button>";
+    html += '<div class="total-box"><span style="color:#475569;font-size:13.5px">Jami summa</span><span style="font-weight:800;font-size:17px;color:'+BLUE+'">'+fmtMoney(formTotal)+" so'm</span></div>";
+    html += '</div>';
+    html += '<button class="btn submit-btn" onclick="submitForm()">Qarzni saqlash</button>';
+    html += '</div></div>';
+  }
+
+  if (state.toast) {
+    html += '<div class="toast">'+escapeHtml(state.toast)+'</div>';
+  }
+
+  document.getElementById('app').innerHTML = html;
+
+  // refocus inputs after re-render if needed (simple apps: skip advanced focus retention)
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ---- actions ----
+function openForm() {
+  state.showForm = true;
+  state.fName = ""; state.fPhone = ""; state.fDue = "";
+  state.formItems = [{ id: uid(), name: "", price: "", qty: "1" }];
+  render();
+}
+function closeForm() { state.showForm = false; render(); }
+function closeFormOverlay(e) { if (e.target.classList.contains('overlay')) closeForm(); }
+function addItemRow() { state.formItems.push({ id: uid(), name: "", price: "", qty: "1" }); render(); }
+function removeItemRow(id) {
+  if (state.formItems.length > 1) state.formItems = state.formItems.filter(r => r.id !== id);
+  render();
+}
+function updateItemRow(id, field, value) {
+  const row = state.formItems.find(r => r.id === id);
+  if (row) row[field] = value;
+  // re-render only totals without losing focus is tricky in plain JS; simplest: update total box directly
+  const formTotal = state.formItems.reduce((s,it)=> s + (Number(it.price)||0)*(Number(it.qty)||0), 0);
+  const totalEl = document.querySelector('.total-box span:last-child');
+  if (totalEl) totalEl.textContent = fmtMoney(formTotal) + " so'm";
+}
+function submitForm() {
+  const name = (state.fName || "").trim();
+  if (!name) { alert("Iltimos, mijoz ismini kiriting"); return; }
+  const cleanItems = state.formItems
+    .filter(it => it.name.trim() && Number(it.price) > 0)
+    .map(it => ({ id: it.id, name: it.name.trim(), price: Number(it.price), qty: Number(it.qty) || 1 }));
+  if (cleanItems.length === 0) { alert("Kamida bitta mahsulot kiriting"); return; }
+  const newCustomer = {
+    id: uid(), name, phone: (state.fPhone||"").trim(), dueDate: state.fDue || null,
+    createdAt: todayStr(), items: cleanItems, payments: [],
+  };
+  state.customers.unshift(newCustomer);
+  save();
+  state.showForm = false;
+  render();
+  showToast("Qarz qo'shildi");
+}
+function toggleExpand(id) { state.expandedId = state.expandedId === id ? null : id; render(); }
+function removeCustomer(id) {
+  if (!confirm("Ushbu yozuvni o'chirmoqchimisiz?")) return;
+  state.customers = state.customers.filter(c => c.id !== id);
+  save(); render();
+  showToast("O'chirildi");
+}
+function startPayment(id) { state.payingId = id; state.payAmount = ""; render(); }
+function cancelPayment() { state.payingId = null; state.payAmount = ""; render(); }
+function onPayAmount(v) { state.payAmount = v; }
+function submitPayment(id) {
+  const amt = Number(state.payAmount);
+  if (!amt || amt <= 0) { alert("To'g'ri summa kiriting"); return; }
+  const c = state.customers.find(c => c.id === id);
+  if (c) {
+    c.payments = c.payments || [];
+    c.payments.push({ id: uid(), amount: amt, date: todayStr() });
+  }
+  save();
+  state.payingId = null; state.payAmount = "";
+  render();
+  showToast("To'lov qabul qilindi");
+}
+function onSearch(v) { state.search = v; render(); }
+
+// ---- PWA install ----
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  state.deferredPrompt = e;
+  state.showInstallBanner = true;
+  render();
+});
+function installApp() {
+  if (!state.deferredPrompt) return;
+  state.deferredPrompt.prompt();
+  state.deferredPrompt.userChoice.finally(() => {
+    state.deferredPrompt = null;
+    state.showInstallBanner = false;
+    render();
+  });
+}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+render();
+</script>
+</body>
+</html>
